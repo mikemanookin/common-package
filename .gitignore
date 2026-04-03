@@ -1,3 +1,6 @@
+# Mac nonesense
+.DS_Store
+
 # Autosave files
 *.asv
 *.m~
