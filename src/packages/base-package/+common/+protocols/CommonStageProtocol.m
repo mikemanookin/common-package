@@ -1,0 +1,100 @@
+classdef (Abstract) CommonStageProtocol < common.protocols.CommonProtocol
+    
+    properties
+        interpulseInterval = 0.25          % Duration between Epochs (s)
+    end
+    
+    properties (Access = protected)
+        waitingForHardwareToStart
+    end
+
+    properties (Dependent, Hidden, SetAccess = private)
+        frameMonitor % Frame monitor
+    end
+    
+    methods (Abstract)
+        p = createPresentation(obj);
+    end
+    
+    methods
+        
+        function prepareEpoch(obj, epoch)
+            prepareEpoch@common.protocols.CommonProtocol(obj, epoch);
+            
+            obj.waitingForHardwareToStart = true;
+            % Wait for a trigger/TTL signal from the frame monitor to start
+            % acquisition. This synchronizes the beginning of the stimulus
+            % presentation with the DAQ clock.
+            epoch.shouldWaitForTrigger = true;
+
+            % Add the frame monitor response.
+            if ~isempty(obj.frameMonitor)
+                epoch.addResponse(obj.frameMonitor);
+            end
+            
+            redSync = obj.rig.getDevices('Red Sync');
+            if ~isempty(redSync)
+                epoch.addResponse(redSync{1});
+            end
+            
+            projector_gain = obj.rig.getDevices('Projector Gain');
+            if ~isempty(projector_gain)
+                projector_gain{1}.background = symphonyui.core.Measurement(1, projector_gain{1}.background.displayUnits);
+                projector_gain{1}.applyBackground();
+            end
+        end
+
+        % Additional figures specific to Stage protocols.
+        function prepareDefaultFigures(obj)
+            prepareDefaultFigures@common.protocols.CommonProtocol(obj);
+
+            % Add the frame monitor figure if it's in the rig config.
+            if ~isempty(obj.frameMonitor)
+                obj.showFigure('symphonyui.builtin.figures.FrameTimingFigure', obj.rig.getDevice('Stage'), obj.frameMonitor);
+            end
+        end
+
+        function controllerDidStartHardware(obj)
+            controllerDidStartHardware@common.protocols.CommonProtocol(obj);
+            
+            if obj.waitingForHardwareToStart
+                obj.waitingForHardwareToStart = false;
+                try
+                    dev = obj.rig.getDevice('Stage');
+                    dev.play(obj.createPresentation());
+                catch ex
+                    fprintf(2, 'Stage play FAILED: %s\n', ex.message);
+                end
+            end
+        end
+        
+        function tf = shouldContinuePreloadingEpochs(obj) %#ok<MANU>
+            tf = false;
+        end
+        
+        function tf = shouldWaitToContinuePreparingEpochs(obj)
+            tf = obj.numEpochsPrepared > obj.numEpochsCompleted || obj.numIntervalsPrepared > obj.numIntervalsCompleted;
+        end
+
+        % Check for second amplifier and set up if present in rig config.
+        function a = get.frameMonitor(obj)
+            a = obj.rig.getDevice('Frame Monitor');
+        end
+        
+        function completeRun(obj)
+            completeRun@common.protocols.CommonProtocol(obj);
+            obj.rig.getDevice('Stage').clearMemory();
+        end
+        
+        function [tf, msg] = isValid(obj)
+            [tf, msg] = isValid@common.protocols.CommonProtocol(obj);
+            if tf
+                tf = ~isempty(obj.rig.getDevices('Stage'));
+                msg = 'No stage';
+            end
+        end
+        
+    end
+    
+end
+
