@@ -64,4 +64,4 @@ All of these functions *could* be implemented in individual protocols, but they 
 
 I have combined much of the functionality in RiekeLabProtocol, RiekeLabStageProtocol, and ManookinLabProtocol. I have also cleaned up that code and added more functionality.
 
-For example, the new 'SingleSpot' stimulus, which maintains exactly the same functionality as the old protocol, has gone from 106 lines of code to 49 lines (including spaces).
+For example, the new `SingleSpot` stimulus, which maintains exactly the same functionality as the old protocol, has gone from 106 lines of code to 49 lines (including spaces). It now consists essentially of (1) defining a set of protocol parameters and (2) implementing the `createPresentation` method to implement the stimulus.
