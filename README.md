@@ -30,7 +30,7 @@ Furthermore, several common Protocol properties need to be used in order to main
         interpulseInterval
     end
 ```
-If a user wants to use other designations, they are free to do so, but they must still implement the abstract parameters. A common example of this is 'stimTime'. If I wanted to use another set of properties for designating how the stimulus was delivered, such as paired flashes with a time in between, I could implement 'stimTime' as a dependent property. For example:
+If a user wants to use other designations, they are free to do so, but they must still implement the abstract parameters. A common example of this is `stimTime`. If I wanted to use another set of properties for designating how the stimulus was delivered, such as paired flashes with a time in between, I could implement `stimTime` as a dependent property. For example:
 
 ```matlab
     properties
