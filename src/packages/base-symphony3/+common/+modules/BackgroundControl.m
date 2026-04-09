@@ -1,21 +1,44 @@
 classdef BackgroundControl < symphonyui.ui.Module
+    % Displays and controls the background values for all output devices.
+    % Adapted from the Symphony3 example BackgroundControl with the
+    % "Turn LEDs Off" feature from the Symphony2 version.
 
     properties (Access = private)
+        settings
         devices
         deviceListeners
-        deviceTable  % uitable for editing background values
+        deviceTable             % uitable for editing background values
+        turnLedsOffBtn          % uibutton for turning all LEDs off
+        hideUnitlessCheckbox    % uicheckbox for hiding unitless devices
+        visibleDeviceIndices    % maps table rows to obj.devices indices
     end
 
     methods
 
         function createUi(obj, figureHandle)
             figureHandle.Name = 'Background Control';
-            figureHandle.Position(3:4) = [320 200];
+            figureHandle.Position(3:4) = [340 220];
 
-            grid = uigridlayout(figureHandle, [1 1]);
-            grid.Padding = [6 6 6 6];
+            mainGrid = uigridlayout(figureHandle, [2 1]);
+            mainGrid.RowHeight = {30, '1x'};
+            mainGrid.Padding = [6 6 6 6];
+            mainGrid.RowSpacing = 4;
 
-            obj.deviceTable = uitable(grid, ...
+            % Toolbar row
+            toolbarGrid = uigridlayout(mainGrid, [1 3]);
+            toolbarGrid.ColumnWidth = {110, '1x', 'fit'};
+            toolbarGrid.Padding = [0 0 0 0];
+            obj.turnLedsOffBtn = uibutton(toolbarGrid, ...
+                'Text', 'Turn LEDs Off', ...
+                'ButtonPushedFcn', @(~,~)obj.onSelectedTurnLedsOff());
+            uilabel(toolbarGrid, 'Text', ''); % spacer
+            obj.hideUnitlessCheckbox = uicheckbox(toolbarGrid, ...
+                'Text', 'Hide unitless devices', ...
+                'Value', true, ...
+                'ValueChangedFcn', @(~,~)obj.onHideUnitlessChanged());
+
+            % Device table
+            obj.deviceTable = uitable(mainGrid, ...
                 'ColumnName', {'Device', 'Background', 'Units'}, ...
                 'ColumnEditable', [false true false], ...
                 'ColumnWidth', {'1x', 80, 60}, ...
@@ -27,8 +50,23 @@ classdef BackgroundControl < symphonyui.ui.Module
     methods (Access = protected)
 
         function willGo(obj)
+            obj.settings = common.modules.settings.BackgroundControlSettings();
             obj.devices = obj.configurationService.getOutputDevices();
             obj.populateTable();
+            try
+                if ~isempty(obj.settings.viewPosition)
+                    obj.figureHandle.Position = obj.settings.viewPosition;
+                end
+            catch
+            end
+        end
+
+        function willStop(obj)
+            try
+                obj.settings.viewPosition = obj.figureHandle.Position;
+                obj.settings.save();
+            catch
+            end
         end
 
         function bind(obj)
@@ -60,16 +98,22 @@ classdef BackgroundControl < symphonyui.ui.Module
 
         function populateTable(obj)
             n = numel(obj.devices);
+            obj.visibleDeviceIndices = [];
             if n == 0
                 obj.deviceTable.Data = {};
                 return;
             end
-            data = cell(n, 3);
+            data = {};
             for i = 1:n
                 d = obj.devices{i};
-                data{i, 1} = d.name;
-                data{i, 2} = d.background.quantity;
-                data{i, 3} = d.background.displayUnits;
+                if obj.hideUnitlessCheckbox.Value && strcmp(d.background.displayUnits, '_unitless_')
+                    continue;
+                end
+                obj.visibleDeviceIndices(end + 1) = i;
+                row = numel(obj.visibleDeviceIndices);
+                data{row, 1} = d.name;
+                data{row, 2} = d.background.quantity;
+                data{row, 3} = d.background.displayUnits;
             end
             obj.deviceTable.Data = data;
         end
@@ -85,12 +129,11 @@ classdef BackgroundControl < symphonyui.ui.Module
                 newVal = str2double(newVal);
             end
             if isnan(newVal)
-                % Revert
                 obj.populateTable();
                 return;
             end
 
-            device = obj.devices{row};
+            device = obj.devices{obj.visibleDeviceIndices(row)};
             oldBackground = device.background;
             device.background = symphonyui.core.Measurement(newVal, device.background.displayUnits);
             try
@@ -98,7 +141,7 @@ classdef BackgroundControl < symphonyui.ui.Module
             catch x
                 device.background = oldBackground;
                 obj.populateTable();
-                uialert(obj.getFigureHandle(), x.message, 'Background Error');
+                uialert(obj.figureHandle, x.message, 'Background Error');
                 return;
             end
 
@@ -111,6 +154,27 @@ classdef BackgroundControl < symphonyui.ui.Module
                         symphonyui.core.Measurement(newVal, b.displayUnits));
                 end
             end
+        end
+
+        function onSelectedTurnLedsOff(obj, ~, ~)
+            % Turn off all LED devices by setting background to -1V or 0.
+            leds = obj.configurationService.getDevices('LED');
+            for i = 1:numel(leds)
+                led = leds{i};
+                if strcmp(led.background.baseUnits, 'V')
+                    led.background = symphonyui.core.Measurement(-1, led.background.displayUnits);
+                else
+                    led.background = symphonyui.core.Measurement(0, led.background.displayUnits);
+                end
+                try
+                    led.applyBackground();
+                catch
+                end
+            end
+        end
+
+        function onHideUnitlessChanged(obj)
+            obj.populateTable();
         end
 
         function onServiceInitializedRig(obj, ~, ~)

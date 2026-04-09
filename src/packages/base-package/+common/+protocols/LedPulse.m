@@ -23,7 +23,6 @@ classdef LedPulse < common.protocols.CommonProtocol
             didSetRig@common.protocols.CommonProtocol(obj);
             
             [obj.led, obj.ledType] = obj.createDeviceNamesProperty('LED');
-            %[obj.amp, obj.ampType] = obj.createDeviceNamesProperty('Amp');
         end
         
         function p = getPreview(obj, panel)
@@ -32,14 +31,10 @@ classdef LedPulse < common.protocols.CommonProtocol
         
         function prepareRun(obj)
             prepareRun@common.protocols.CommonProtocol(obj);
-            
-            % obj.showFigure('symphonyui.builtin.figures.ResponseFigure', obj.rig.getDevice(obj.amp));
-            % obj.showFigure('symphonyui.builtin.figures.MeanResponseFigure', obj.rig.getDevice(obj.amp));
+
             obj.showFigure('symphonyui.builtin.figures.ResponseStatisticsFigure', obj.rig.getDevice(obj.amp), {@mean, @var}, ...
                 'baselineRegion', [0 obj.preTime], ...
                 'measurementRegion', [obj.preTime obj.preTime+obj.stimTime]);
-            % % Show the progress bar.
-            % obj.showFigure('symphonyui.builtin.figures.ProgressFigure', obj.numberOfAverages);
             
             obj.rig.getDevice(obj.led).background = symphonyui.core.Measurement(obj.lightMean, 'V');
         end
@@ -62,13 +57,6 @@ classdef LedPulse < common.protocols.CommonProtocol
             prepareEpoch@common.protocols.CommonProtocol(obj, epoch);
             
             epoch.addStimulus(obj.rig.getDevice(obj.led), obj.createLedStimulus());
-            % epoch.addResponse(obj.rig.getDevice(obj.amp));
-            % 
-            % % Add the second Amp if it exists.
-            % if ~strcmp(obj.amp2, '(None)')
-            %     epoch.addResponse(obj.rig.getDevice(obj.amp2));
-            % end
-            % obj.setAmpResponses(epoch);
         end
         
         function prepareInterval(obj, interval)
@@ -77,14 +65,6 @@ classdef LedPulse < common.protocols.CommonProtocol
             device = obj.rig.getDevice(obj.led);
             interval.addDirectCurrentStimulus(device, device.background, obj.interpulseInterval, obj.sampleRate);
         end
-        
-        % function tf = shouldContinuePreparingEpochs(obj)
-        %     tf = obj.numEpochsPrepared < obj.numberOfAverages;
-        % end
-        % 
-        % function tf = shouldContinueRun(obj)
-        %     tf = obj.numEpochsCompleted < obj.numberOfAverages;
-        % end
         
     end
     

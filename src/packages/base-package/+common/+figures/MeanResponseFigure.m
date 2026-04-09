@@ -94,7 +94,7 @@ classdef MeanResponseFigure < symphonyui.core.FigureHandler
                 if obj.psth
                     sigma = 15e-3 * sampleRate;
                     filter = normpdf(1:10*sigma, 10*sigma/2, sigma);
-                    results = edu.washington.riekelab.util.spikeDetectorOnline(y, [], sampleRate);
+                    results = common.util.spikeDetectorOnline(y, [], sampleRate);
                     y = zeros(size(y));
                     y(results.sp) = 1;
                     y = sampleRate * conv(y, filter, 'same');

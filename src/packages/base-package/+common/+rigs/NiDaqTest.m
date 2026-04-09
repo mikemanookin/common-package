@@ -12,6 +12,8 @@ classdef NiDaqTest < symphonyui.core.descriptions.RigDescription
             % Dev2: Pcie-6323; Dev1,3: 6374
             daq = NiDaqController(daq_names); %daq = NiDaqController('Dev2');
             obj.daqController = daq;
+
+            disp('Successfully loaded NiDAQ controller.');
             
             if iscell(daq_names)
                 channel_prefix = [daq_names{1},'_'];
