@@ -106,7 +106,11 @@ classdef LightCrafterDevice < symphonyui.core.Device
             obj.addConfigurationSetting('expectedRefreshRate', ip.Results.expectedRefreshRate, 'isReadOnly', true);
             obj.addConfigurationSetting('prerender', false, 'isReadOnly', true);
             obj.addConfigurationSetting('lightCrafterLedEnables',  [auto, red, green, blue], 'isReadOnly', true);
-            obj.addConfigurationSetting('lightCrafterPatternRate', obj.lightCrafter.currentPatternRate(), 'isReadOnly', true);
+            if strcmpi(obj.mode, 'pattern')
+                obj.addConfigurationSetting('lightCrafterPatternRate', obj.lightCrafter.currentPatternRate(), 'isReadOnly', true);
+            else
+                obj.addConfigurationSetting('lightCrafterPatternRate', 0, 'isReadOnly', true);
+            end
             obj.addConfigurationSetting('micronsPerPixel', ip.Results.micronsPerPixel, 'isReadOnly', true);
             obj.addResource('gammaRamps', ip.Results.gammaRamps);
         end
