@@ -11,9 +11,10 @@ classdef FilterWheelControl < symphonyui.ui.Module
 
         function createUi(obj, figureHandle)
             figureHandle.Name = 'ND Wheel Control';
-            figureHandle.Position(3:4) = [280 100];
+            figureHandle.Position(3:4) = [200 100]; % Width, Height
 
             grid = uigridlayout(figureHandle, [1 2]);
+            grid.RowHeight = {25};
             grid.ColumnWidth = {80, '1x'};
             grid.Padding = [10 10 10 10];
 
