@@ -5,10 +5,12 @@ classdef LightCrafterControl < symphonyui.ui.Module
     properties (Access = private)
         settings
         lightCrafter
+        modeDropdown
         autoCheckbox
         redCheckbox
         greenCheckbox
         blueCheckbox
+        patternRateLabel
         patternRateDropdown
         centerOffsetXField
         centerOffsetYField
@@ -22,16 +24,23 @@ classdef LightCrafterControl < symphonyui.ui.Module
 
         function createUi(obj, figureHandle)
             figureHandle.Name = 'LightCrafter Control';
-            figureHandle.Position(3:4) = [380 200];
+            figureHandle.Position(3:4) = [380 234];
             figureHandle.Resize = 'off';
 
-            grid = uigridlayout(figureHandle, [5 2]);
+            grid = uigridlayout(figureHandle, [6 2]);
             grid.ColumnWidth = {120, '1x'};
-            grid.RowHeight = {28, 28, 28, 28, 28};
+            grid.RowHeight = {28, 28, 28, 28, 28, 28};
             grid.Padding = [10 10 10 10];
             grid.RowSpacing = 6;
 
-            % Row 1: LED enables
+            % Row 1: Mode
+            uilabel(grid, 'Text', 'Mode:', 'HorizontalAlignment', 'right');
+            obj.modeDropdown = uidropdown(grid, ...
+                'Items', {'Pattern', 'Video'}, ...
+                'ItemsData', {'pattern', 'video'}, ...
+                'ValueChangedFcn', @(~,~)obj.onSelectedMode());
+
+            % Row 2: LED enables
             uilabel(grid, 'Text', 'LED enables:', 'HorizontalAlignment', 'right');
             cbGrid = uigridlayout(grid, [1 4]);
             cbGrid.ColumnWidth = {'1x', '1x', '1x', '1x'};
@@ -45,13 +54,13 @@ classdef LightCrafterControl < symphonyui.ui.Module
             obj.blueCheckbox = uicheckbox(cbGrid, 'Text', 'Blue', ...
                 'ValueChangedFcn', @(~,~)obj.onSelectedLedEnable());
 
-            % Row 2: Pattern rate
-            uilabel(grid, 'Text', 'Pattern rate:', 'HorizontalAlignment', 'right');
+            % Row 3: Pattern rate
+            obj.patternRateLabel = uilabel(grid, 'Text', 'Pattern rate:', 'HorizontalAlignment', 'right');
             obj.patternRateDropdown = uidropdown(grid, ...
                 'Items', {' '}, ...
                 'ValueChangedFcn', @(~,~)obj.onSelectedPatternRate());
 
-            % Row 3: Center offset
+            % Row 4: Center offset
             uilabel(grid, 'Text', 'Center offset (um):', 'HorizontalAlignment', 'right');
             offsetGrid = uigridlayout(grid, [1 4]);
             offsetGrid.ColumnWidth = {'1x', 15, '1x', 15};
@@ -63,12 +72,12 @@ classdef LightCrafterControl < symphonyui.ui.Module
                 'ValueChangedFcn', @(~,~)obj.onSetCenterOffset());
             uilabel(offsetGrid, 'Text', 'Y');
 
-            % Row 4: Prerender
+            % Row 5: Prerender
             uilabel(grid, 'Text', 'Prerender:', 'HorizontalAlignment', 'right');
             obj.prerenderCheckbox = uicheckbox(grid, 'Text', '', ...
                 'ValueChangedFcn', @(~,~)obj.onSelectedPrerender());
 
-            % Row 5: LED currents
+            % Row 6: LED currents
             uilabel(grid, 'Text', 'LCR LED currents:', 'HorizontalAlignment', 'right');
             currGrid = uigridlayout(grid, [1 6]);
             currGrid.ColumnWidth = {'1x', 15, '1x', 15, '1x', 15};
@@ -96,11 +105,13 @@ classdef LightCrafterControl < symphonyui.ui.Module
             end
             obj.lightCrafter = devices{1};
 
+            obj.populateMode();
             obj.populateLedEnables();
             obj.populatePatternRateList();
             obj.populateCenterOffset();
             obj.populatePrerender();
             obj.populateLedCurrents();
+            obj.updatePatternRateEnabled();
 
             try
                 if ~isempty(obj.settings.viewPosition)
@@ -123,6 +134,27 @@ classdef LightCrafterControl < symphonyui.ui.Module
 
     methods (Access = private)
 
+        function populateMode(obj)
+            obj.modeDropdown.Value = obj.lightCrafter.getMode();
+        end
+
+        function onSelectedMode(obj)
+            obj.lightCrafter.setMode(obj.modeDropdown.Value);
+            obj.populatePatternRateList();
+            obj.updatePatternRateEnabled();
+        end
+
+        function updatePatternRateEnabled(obj)
+            isPattern = strcmp(obj.lightCrafter.getMode(), 'pattern');
+            if isPattern
+                obj.patternRateLabel.Enable = 'on';
+                obj.patternRateDropdown.Enable = 'on';
+            else
+                obj.patternRateLabel.Enable = 'off';
+                obj.patternRateDropdown.Enable = 'off';
+            end
+        end
+
         function populateLedEnables(obj)
             [auto, red, green, blue] = obj.lightCrafter.getLedEnables();
             obj.autoCheckbox.Value = auto;
@@ -139,10 +171,18 @@ classdef LightCrafterControl < symphonyui.ui.Module
 
         function populatePatternRateList(obj)
             rates = obj.lightCrafter.availablePatternRates();
+            if isempty(rates)
+                obj.patternRateDropdown.Items = {'N/A'};
+                obj.patternRateDropdown.ItemsData = {};
+                return;
+            end
             names = cellfun(@(r)[num2str(r) ' Hz'], rates, 'UniformOutput', false);
             obj.patternRateDropdown.Items = names;
             obj.patternRateDropdown.ItemsData = cell2mat(rates);
-            obj.patternRateDropdown.Value = obj.lightCrafter.getPatternRate();
+            currentRate = obj.lightCrafter.getPatternRate();
+            if ~isempty(currentRate) && any(cell2mat(rates) == currentRate)
+                obj.patternRateDropdown.Value = currentRate;
+            end
         end
 
         function onSelectedPatternRate(obj)
