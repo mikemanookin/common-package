@@ -227,10 +227,8 @@ classdef LightCrafterControl < symphonyui.ui.Module
         function updatePatternRateEnabled(obj)
             isPattern = strcmp(obj.lightCrafter.getMode(), 'pattern');
             if isPattern
-                set(obj.patternRateLabel, 'Enable', 'on');
                 set(obj.patternRatePopupMenu, 'Enable', 'on');
             else
-                set(obj.patternRateLabel, 'Enable', 'off');
                 set(obj.patternRatePopupMenu, 'Enable', 'off');
             end
         end
