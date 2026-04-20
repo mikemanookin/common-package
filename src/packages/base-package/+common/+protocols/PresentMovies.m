@@ -1,6 +1,6 @@
 % Plays movies...
 % Note: Requires movies in .mp4 format.
-classdef PresentMovies < manookinlab.protocols.ManookinLabStageProtocol
+classdef PresentMovies < common.protocols.CommonStageProtocol
     
     properties
         amp                             % Output amplifier
@@ -32,15 +32,10 @@ classdef PresentMovies < manookinlab.protocols.ManookinLabStageProtocol
     end
 
     methods
-        
-        function didSetRig(obj)
-            didSetRig@edu.washington.riekelab.protocols.RiekeLabStageProtocol(obj);
-            [obj.amp, obj.ampType] = obj.createDeviceNamesProperty('Amp');
-        end
 
         function prepareRun(obj)
 
-            prepareRun@manookinlab.protocols.ManookinLabStageProtocol(obj);
+            prepareRun@common.protocols.CommonStageProtocol(obj);
 
             obj.showFigure('symphonyui.builtin.figures.ResponseFigure', obj.rig.getDevice(obj.amp));
 
@@ -118,7 +113,7 @@ classdef PresentMovies < manookinlab.protocols.ManookinLabStageProtocol
         end
         
         function prepareEpoch(obj, epoch)
-            prepareEpoch@manookinlab.protocols.ManookinLabStageProtocol(obj, epoch);
+            prepareEpoch@common.protocols.CommonStageProtocol(obj, epoch);
             
             mov_name = obj.sequence(mod(obj.numEpochsCompleted,length(obj.sequence)) + 1);
             obj.movie_name = obj.imagePaths{mov_name,1};
@@ -132,14 +127,6 @@ classdef PresentMovies < manookinlab.protocols.ManookinLabStageProtocol
         
         function preTime = get.preTime(obj)
             preTime = 0;
-        end
-
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfAverages;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfAverages;
         end
     end
 end

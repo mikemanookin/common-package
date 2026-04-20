@@ -65,7 +65,7 @@ classdef SpatialNoise < common.protocols.CommonStageProtocol
         end
 
         function prepareRun(obj)
-            prepareRun@manookinlab.protocols.ManookinLabStageProtocol(obj);
+            prepareRun@common.protocols.CommonStageProtocol(obj);
             
             % Get the number of frames.
             obj.numFrames = floor(obj.stimTime * 1e-3 * obj.frameRate)+15;
@@ -424,27 +424,11 @@ classdef SpatialNoise < common.protocols.CommonStageProtocol
             epoch.addParameter('repeat_frames', obj.repeat_frames);
         end
         
-        function a = get.amp2(obj)
-            amps = obj.rig.getDeviceNames('Amp');
-            if numel(amps) < 2
-                a = '(None)';
-            else
-                i = find(~ismember(amps, obj.amp), 1);
-                a = amps{i};
-            end
-        end
-        
+        % Getter method for stimTime
         function stimTime = get.stimTime(obj)
             stimTime = obj.uniqueTime + obj.repeatTime;
         end
-        
-        % function tf = shouldContinuePreparingEpochs(obj)
-        %     tf = obj.numEpochsPrepared < obj.numberOfAverages;
-        % end
-        % 
-        % function tf = shouldContinueRun(obj)
-        %     tf = obj.numEpochsCompleted < obj.numberOfAverages;
-        % end
+
         
         function completeRun(obj)
             completeRun@common.protocols.CommonStageProtocol(obj);

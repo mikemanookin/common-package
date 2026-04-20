@@ -16,7 +16,7 @@
 % images were scaled in order to fill the screen.
 
 
-classdef PresentImages < manookinlab.protocols.ManookinLabStageProtocol
+classdef PresentImages < common.protocols.CommonStageProtocol
     
     properties
         amp                         % Output amplifier
@@ -73,14 +73,9 @@ classdef PresentImages < manookinlab.protocols.ManookinLabStageProtocol
     end
 
     methods
-        
-        function didSetRig(obj)
-            didSetRig@edu.washington.riekelab.protocols.RiekeLabStageProtocol(obj);
-            [obj.amp, obj.ampType] = obj.createDeviceNamesProperty('Amp');
-        end
 
         function prepareRun(obj)
-            prepareRun@manookinlab.protocols.ManookinLabStageProtocol(obj);
+            prepareRun@common.protocols.CommonStageProtocol(obj);
 
             if ~obj.isMeaRig
                 obj.showFigure('symphonyui.builtin.figures.ResponseFigure', obj.rig.getDevice(obj.amp));
@@ -133,50 +128,50 @@ classdef PresentImages < manookinlab.protocols.ManookinLabStageProtocol
             obj.organize_image_sequences(obj.image_parent_dir);
         end
 
-    function organize_image_sequences(obj, image_dir)
-
-        [obj.path_dict, obj.imagesPerDir] = manookinlab.util.read_images_from_dir(image_dir, obj.folderList, obj.validImageExtensions);
-        
-        nFolders = length(obj.folderList);
-        obj.sequence = cell(1, nFolders); % One cell per folder
-
-        % Calculate how many epochs each folder will be used
-        nEpochsForFolder = ceil(double(obj.numberOfAverages) / nFolders);
-
-        for ii = 1:nFolders   
-            nImgs = obj.imagesPerDir(ii);
-            assert(nImgs > 0, ['No images found in folder: ', obj.folderList{ii}]);
+        function organize_image_sequences(obj, image_dir)
+    
+            [obj.path_dict, obj.imagesPerDir] = common.util.read_images_from_dir(image_dir, obj.folderList, obj.validImageExtensions);
             
-            % Number of image-trials needed to fill each epoch for this folder
-            nNeeded = nEpochsForFolder * obj.imagesPerEpoch;
-
-            % Typically will have less images than needed, so 
-            % repeat the sequence as many times as needed.
-            if nImgs < nNeeded
-                nRepeats = ceil(nNeeded / nImgs);
-                perm = [];
-                for jj = 1:nRepeats
+            nFolders = length(obj.folderList);
+            obj.sequence = cell(1, nFolders); % One cell per folder
+    
+            % Calculate how many epochs each folder will be used
+            nEpochsForFolder = ceil(double(obj.numberOfAverages) / nFolders);
+    
+            for ii = 1:nFolders   
+                nImgs = obj.imagesPerDir(ii);
+                assert(nImgs > 0, ['No images found in folder: ', obj.folderList{ii}]);
+                
+                % Number of image-trials needed to fill each epoch for this folder
+                nNeeded = nEpochsForFolder * obj.imagesPerEpoch;
+    
+                % Typically will have less images than needed, so 
+                % repeat the sequence as many times as needed.
+                if nImgs < nNeeded
+                    nRepeats = ceil(nNeeded / nImgs);
+                    perm = [];
+                    for jj = 1:nRepeats
+                        if obj.randomize
+                            perm = [perm, randperm(nImgs)]; %#ok<AGROW>
+                        else
+                            perm = [perm, 1:nImgs]; %#ok<AGROW>
+                        end
+                    end
+                elseif nImgs >= nNeeded
+                    % If more images than can be covered across epochs,
                     if obj.randomize
-                        perm = [perm, randperm(nImgs)]; %#ok<AGROW>
+                        perm = randperm(nImgs);
                     else
-                        perm = [perm, 1:nImgs]; %#ok<AGROW>
+                        perm = 1:nImgs;
                     end
                 end
-            elseif nImgs >= nNeeded
-                % If more images than can be covered across epochs,
-                if obj.randomize
-                    perm = randperm(nImgs);
-                else
-                    perm = 1:nImgs;
-                end
+                perm = perm(1:nNeeded);
+    
+                % Reshape into [imagesPerEpoch x nEpochsForFolder] so that the sequence 
+                % progresses across rows (i.e. imagesPerEpoch) for each epoch before moving to the next epoch (next column).
+                obj.sequence{ii} = reshape(perm, obj.imagesPerEpoch, nEpochsForFolder);
             end
-            perm = perm(1:nNeeded);
-
-            % Reshape into [imagesPerEpoch x nEpochsForFolder] so that the sequence 
-            % progresses across rows (i.e. imagesPerEpoch) for each epoch before moving to the next epoch (next column).
-            obj.sequence{ii} = reshape(perm, obj.imagesPerEpoch, nEpochsForFolder);
         end
-    end
 
         
         function p = createPresentation(obj)
@@ -251,7 +246,7 @@ classdef PresentImages < manookinlab.protocols.ManookinLabStageProtocol
         end
         
         function prepareEpoch(obj, epoch)
-            prepareEpoch@manookinlab.protocols.ManookinLabStageProtocol(obj, epoch);
+            prepareEpoch@common.protocols.CommonStageProtocol(obj, epoch);
             
             % Remove the Amp responses if it's an MEA rig.
             if obj.isMeaRig
@@ -320,22 +315,5 @@ classdef PresentImages < manookinlab.protocols.ManookinLabStageProtocol
             stimTime = obj.imagesPerEpoch * (obj.flashTime + obj.gapTime);
         end
         
-        function a = get.amp2(obj)
-            amps = obj.rig.getDeviceNames('Amp');
-            if numel(amps) < 2
-                a = '(None)';
-            else
-                i = find(~ismember(amps, obj.amp), 1);
-                a = amps{i};
-            end
-        end
-
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfAverages;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfAverages;
-        end
     end
 end

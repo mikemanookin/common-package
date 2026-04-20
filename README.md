@@ -11,7 +11,18 @@ git clone https://github.com/mikemanookin/common-package.git --recursive
 ```
 
 
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Protocol Development Guide](docs/PROTOCOL.md) | Class hierarchy, required properties, lifecycle, and how to write new protocols |
+| [Unit Testing Guide](docs/UNIT_TESTS.md) | Test framework, running tests, and what gets validated |
+| [Specifications](spec/SPECS.md) | Normative specs that define protocol contracts |
+
 ## Protocol Class Structure
+
+A more detailed overview is provided in the [Protocol Development Guide](docs/PROTOCOL.md). Briefly, two abstract superclasses handle general tasks, which decreases the burden on individual protocols/protocol writers.
+
 ```md
 Symphony Core Protocol (symphonyui.core.Protocol)
 └── Common Lab Protocols (common.protocols.CommonProtocol)

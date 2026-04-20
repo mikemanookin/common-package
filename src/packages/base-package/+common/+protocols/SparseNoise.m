@@ -1,4 +1,4 @@
-classdef SparseNoise < manookinlab.protocols.ManookinLabStageProtocol
+classdef SparseNoise < common.protocols.CommonStageProtocol
     properties
         amp                             % Output amplifier
         preTime = 250                   % Noise leading duration (ms)
@@ -46,13 +46,13 @@ classdef SparseNoise < manookinlab.protocols.ManookinLabStageProtocol
 
     methods
         function didSetRig(obj)
-            didSetRig@manookinlab.protocols.ManookinLabStageProtocol(obj);
+            didSetRig@common.protocols.CommonStageProtocol(obj);
 
             [obj.amp, obj.ampType] = obj.createDeviceNamesProperty('Amp');
         end
 
         function prepareRun(obj)
-            prepareRun@manookinlab.protocols.ManookinLabStageProtocol(obj);
+            prepareRun@common.protocols.CommonStageProtocol(obj);
 
             if ~obj.isMeaRig
                 obj.showFigure('symphonyui.builtin.figures.ResponseFigure', obj.rig.getDevice(obj.amp));
@@ -203,7 +203,7 @@ classdef SparseNoise < manookinlab.protocols.ManookinLabStageProtocol
         end
 
         function prepareEpoch(obj, epoch)
-            prepareEpoch@manookinlab.protocols.ManookinLabStageProtocol(obj, epoch);
+            prepareEpoch@common.protocols.CommonStageProtocol(obj, epoch);
             
             % Remove the Amp responses if it's an MEA rig.
             if obj.isMeaRig
@@ -281,22 +281,6 @@ classdef SparseNoise < manookinlab.protocols.ManookinLabStageProtocol
             cWeber = iDelta ./ sum(meanFlux,1);
         end
         
-        function a = get.amp2(obj)
-            amps = obj.rig.getDeviceNames('Amp');
-            if numel(amps) < 2
-                a = '(None)';
-            else
-                i = find(~ismember(amps, obj.amp), 1);
-                a = amps{i};
-            end
-        end
-
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfAverages;
-        end
-
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfAverages;
-        end
+        
     end
 end
