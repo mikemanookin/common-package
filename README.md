@@ -1,5 +1,7 @@
-# common-package
-Common package for Symphony protocols to be shared across collaborating labs.
+# Common/Shared Symphony Data Acquisition Repository
+
+Common package for [Symphony](http://symphony-das.github.io/) protocols to be shared across collaborating labs.
+
 
 ## Cloning the Repository
 This repository uses submodules to include Lightcrafter and Microdisplay libraries. It is recommended to included the --recursive tag when cloning this repository so that these libraries are included.
