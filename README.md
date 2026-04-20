@@ -1,6 +1,13 @@
 # common-package
 Common package for Symphony protocols to be shared across collaborating labs.
 
+## Cloning the Repository
+This repository uses submodules to include Lightcrafter and Microdisplay libraries. It is recommended to included the --recursive tag when cloning this repository so that these libraries are included.
+
+```sh
+git clone https://github.com/mikemanookin/common-package.git --recursive
+```
+
 
 ## Protocol Class Structure
 ```md
