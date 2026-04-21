@@ -18,7 +18,6 @@ classdef SparseNoise < common.protocols.CommonStageProtocol
     end
 
     properties (Hidden)
-        ampType
         onlineAnalysisType = symphonyui.core.PropertyType('char', 'row', {'none', 'extracellular', 'spikes_CClamp', 'subthresh_CClamp', 'analog'})
         noiseClassType = symphonyui.core.PropertyType('char', 'row', {'binary', 'ternary', 'gaussian'})
         chromaticClassType = symphonyui.core.PropertyType('char','row',{'achromatic','RGB','BY','S-LM'})
@@ -40,16 +39,7 @@ classdef SparseNoise < common.protocols.CommonStageProtocol
         time_multiple
     end
     
-    properties (Dependent, SetAccess = private)
-        amp2                            % Secondary amplifier
-    end
-
     methods
-        function didSetRig(obj)
-            didSetRig@common.protocols.CommonStageProtocol(obj);
-
-            [obj.amp, obj.ampType] = obj.createDeviceNamesProperty('Amp');
-        end
 
         function prepareRun(obj)
             prepareRun@common.protocols.CommonStageProtocol(obj);

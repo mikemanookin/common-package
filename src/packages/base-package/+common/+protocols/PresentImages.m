@@ -40,12 +40,7 @@ classdef PresentImages < common.protocols.CommonStageProtocol
         stimTime
     end
     
-    properties (Dependent, SetAccess = private)
-        amp2                            % Secondary amplifier
-    end
-    
     properties (Hidden)
-        ampType
         onlineAnalysisType = symphonyui.core.PropertyType('char', 'row', {'none', 'extracellular', 'exc', 'inh'}) 
         sequence
         image_parent_dir

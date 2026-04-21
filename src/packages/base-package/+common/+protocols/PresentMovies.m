@@ -19,7 +19,6 @@ classdef PresentMovies < common.protocols.CommonStageProtocol
     end
     
     properties (Hidden)
-        ampType
         onlineAnalysisType = symphonyui.core.PropertyType('char', 'row', {'none', 'extracellular', 'exc', 'inh'}) 
         sequence
         imagePaths

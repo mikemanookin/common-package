@@ -3,6 +3,13 @@ classdef (Abstract) CommonStageProtocol < common.protocols.CommonProtocol
     properties
         interpulseInterval = 0.25          % Duration between Epochs (s)
     end
+
+    properties (Hidden)
+        stageClass
+        frameRate
+        canvasSize
+        labName
+    end
     
     properties (Access = protected)
         waitingForHardwareToStart
@@ -17,6 +24,32 @@ classdef (Abstract) CommonStageProtocol < common.protocols.CommonProtocol
     end
     
     methods
+
+        function prepareRun(obj)
+            prepareRun@common.protocols.CommonProtocol(obj);
+            
+            % Get the frame rate. Need to check if it's a LCR rig.
+            if ~isempty(strfind(obj.rig.getDevice('Stage').name, 'LightCrafter'))
+                obj.frameRate = obj.rig.getDevice('Stage').getPatternRate();
+                obj.stageClass = 'LightCrafter';
+            elseif ~isempty(strfind(obj.rig.getDevice('Stage').name, 'LcrRGB'))
+                obj.frameRate = obj.rig.getDevice('Stage').getMonitorRefreshRate();
+                obj.stageClass = 'LcrRGB';
+            else
+                obj.frameRate = obj.rig.getDevice('Stage').getMonitorRefreshRate();
+                obj.stageClass = 'Video';
+            end
+            
+            rigDev = obj.rig.getDevices('rigProperty');
+            if ~isempty(rigDev)
+                obj.labName = rigDev{1}.getConfigurationSetting('laboratory');
+            else
+                obj.labName = 'RiekeLab';
+            end
+            
+            % Get the canvas size.
+            obj.canvasSize = obj.rig.getDevice('Stage').getCanvasSize();  
+        end
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@common.protocols.CommonProtocol(obj, epoch);

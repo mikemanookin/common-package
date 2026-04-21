@@ -7,24 +7,27 @@ classdef SimulatedStage < symphonyui.core.descriptions.RigDescription
             import symphonyui.builtin.devices.*;
             import symphonyui.core.*;
             
-            %daq = HekaSimulationDaqController();
-            daq = HekaDaqController();
+            daq = HekaSimulationDaqController();
+            % daq = HekaDaqController();
             obj.daqController = daq;
             
             % Rig name and laboratory.
             rigDev = RigPropertyDevice('ManookinLab','SimulatedStage');
             obj.addDevice(rigDev);
             
+            % Simulated device to bypass Multiclamp on MEA or simulation
+            % amp1 =  SimulatedAnalogDevice('Amp1', 1).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
+            % MultiClamp device.
             amp1 = MultiClampDevice('Amp1', 1).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
             obj.addDevice(amp1);
 
             % Stage
-            stage = VideoDevice(...
-                'host', 'ELMATADOR-PC', ...
-                'micronsPerPixel', 1.0);
             % stage = VideoDevice(...
-            %     'host', 'localhost',...
+            %     'host', 'ELMATADOR-PC', ...
             %     'micronsPerPixel', 1.0);
+            stage = VideoDevice(...
+                'host', 'localhost',...
+                'micronsPerPixel', 1.0);
             obj.addDevice(stage);
 
             % Add an analog trigger device to simulate the MEA.
