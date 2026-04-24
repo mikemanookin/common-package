@@ -6,7 +6,7 @@ classdef PresentMovies < common.protocols.CommonStageProtocol
         amp                             % Output amplifier
         stimTime    = 15000             % Stimulus duration in msec
         tailTime    = 250               % Trailing duration in msec
-        fileFolder = 'balloons_v1';     % Folder containing videos
+        fileFolder = 'test';            % Folder containing videos
         backgroundIntensity = 0.5;      % 0 - 1 (corresponds to image intensities in folder)
         randomize = true;               % whether to randomize movies shown
         onlineAnalysis = 'none'

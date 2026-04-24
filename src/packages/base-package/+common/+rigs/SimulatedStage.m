@@ -16,9 +16,9 @@ classdef SimulatedStage < symphonyui.core.descriptions.RigDescription
             obj.addDevice(rigDev);
             
             % Simulated device to bypass Multiclamp on MEA or simulation
-            % amp1 =  SimulatedAnalogDevice('Amp1', 1).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
+            amp1 = SimulatedAmplifierDevice('Amp1', daq);
             % MultiClamp device.
-            amp1 = MultiClampDevice('Amp1', 1).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
+            % amp1 = MultiClampDevice('Amp1', 1).bindStream(daq.getStream('ao0')).bindStream(daq.getStream('ai0'));
             obj.addDevice(amp1);
 
             % Stage
@@ -48,18 +48,19 @@ classdef SimulatedStage < symphonyui.core.descriptions.RigDescription
                 'type', PropertyType('char', 'row', {'', 'low', 'medium', 'high'}));
             obj.addDevice(blue);
             
-%              trigger1 = UnitConvertingDevice('Trigger1', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-%             daq.getStream('doport1').setBitPosition(trigger1, 0);
-%             obj.addDevice(trigger1);
-%             
-%             trigger2 = UnitConvertingDevice('Trigger2', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
-%             daq.getStream('doport1').setBitPosition(trigger2, 2);
-%             obj.addDevice(trigger2);
+            trigger1 = UnitConvertingDevice('Trigger1', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
+            daq.getStream('doport1').setBitPosition(trigger1, 0);
+            obj.addDevice(trigger1);
+
+            trigger2 = UnitConvertingDevice('Trigger2', symphonyui.core.Measurement.UNITLESS).bindStream(daq.getStream('doport1'));
+            daq.getStream('doport1').setBitPosition(trigger2, 2);
+            obj.addDevice(trigger2);
             
             frameMonitor = UnitConvertingDevice('Frame Monitor', 'V').bindStream(obj.daqController.getStream('ai2'));
             obj.addDevice(frameMonitor);
             
-            
+            % dummy = UnitConvertingDevice('DummyAO0', 'V').bindStream(daq.getStream('ao0'));
+            % obj.addDevice(dummy);
             
         end
     end

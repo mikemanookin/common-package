@@ -109,7 +109,7 @@ classdef (Abstract) CommonStageProtocol < common.protocols.CommonProtocol
             tf = obj.numEpochsPrepared > obj.numEpochsCompleted || obj.numIntervalsPrepared > obj.numIntervalsCompleted;
         end
 
-        % Check for second amplifier and set up if present in rig config.
+        % Check for a frame monitor and set up if present in rig config.
         function a = get.frameMonitor(obj)
             a = obj.rig.getDevice('Frame Monitor');
         end
