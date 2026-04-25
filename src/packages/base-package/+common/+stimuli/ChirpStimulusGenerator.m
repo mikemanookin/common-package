@@ -5,8 +5,8 @@ classdef ChirpStimulusGenerator < symphonyui.core.StimulusGenerator
 
     
     properties
-        preTime
-        tailTime
+        preTime % Pre-stimulus duration (ms)
+        tailTime % Post-stimulus duration (ms)
         stepTime                   % Step duration (ms)
         frequencyTime           % Frequency sweep duration (ms)
         contrastTime             % Contrast sweep duration (ms)
@@ -20,8 +20,8 @@ classdef ChirpStimulusGenerator < symphonyui.core.StimulusGenerator
         contrastFrequency         % Temporal frequency of contrast sweep (Hz)
         backgroundIntensity        % Background light intensity (0-1)
         
-        sampleRate          % sample rate of generated stimulus (Hz)
-        units               % units of generated stimulus
+        sampleRate          % Sample rate of generated stimulus (Hz)
+        units               % Units of generated stimulus
         
     end
 
@@ -62,16 +62,16 @@ classdef ChirpStimulusGenerator < symphonyui.core.StimulusGenerator
 
             % increment and decrement steps
             stim(prePts+(1:stepPts)) = stim(prePts+(1:stepPts)) + obj.stepContrast * obj.backgroundIntensity;
-            stim(prePts+interPts*2+stepPts+1:interPts*2+stepPts*2) = stim(interPts*2+stepPts+1:interPts*2+stepPts*2) - obj.stepContrast * obj.backgroundIntensity;
+            stim(prePts+interPts+stepPts+(1:stepPts)) = stim(prePts+interPts+stepPts+(1:stepPts)) - obj.stepContrast * obj.backgroundIntensity;
 
             % frequency sweep
             for t = 1:freqPts
-                stim(t + interPts*3+stepPts*2) = obj.frequencyContrast*obj.backgroundIntensity*sin(2*pi*ptsToTime(t)*(obj.frequencyMin+frequencyDelta*t)) + obj.backgroundIntensity;
+                stim(t + prePts+interPts*2+stepPts*2) = obj.frequencyContrast*obj.backgroundIntensity*sin(2*pi*ptsToTime(t)*(obj.frequencyMin+frequencyDelta*t)) + obj.backgroundIntensity;
             end
             
             % contrast sweep
             for t = 1:contrastPts
-                stim(t + interPts*4+stepPts*2+freqPts) = (obj.contrastMin+t*contrastDelta)*obj.backgroundIntensity*sin(2*pi*ptsToTime(t)*obj.contrastFrequency) + obj.backgroundIntensity;
+                stim(t + prePts + interPts*3+stepPts*2+freqPts) = (obj.contrastMin+t*contrastDelta)*obj.backgroundIntensity*sin(2*pi*ptsToTime(t)*obj.contrastFrequency) + obj.backgroundIntensity;
             end               
             
             parameters = obj.dictionaryFromMap(obj.propertyMap);

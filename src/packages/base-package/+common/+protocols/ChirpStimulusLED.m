@@ -4,6 +4,8 @@ classdef ChirpStimulusLED < common.protocols.CommonProtocol
     properties
         led                             % Output LED
         amp                             % Input amplifier
+        preTime     = 250           % Pre time in ms
+        tailTime    = 250           % Tail time in ms
         stepTime = 500                  % Step duration (ms)
         frequencyTime = 15000           % Frequency sweep duration (ms)
         contrastTime = 8000             % Contrast sweep duration (ms)
@@ -64,6 +66,8 @@ classdef ChirpStimulusLED < common.protocols.CommonProtocol
         function stim = createChirpStimulus(obj)
             gen = common.stimuli.ChirpStimulusGenerator();
                         
+            gen.preTime = obj.preTime;
+            gen.tailTime = obj.tailTime;
             gen.stepTime = obj.stepTime;
             gen.frequencyTime = obj.frequencyTime;
             gen.contrastTime = obj.contrastTime;
