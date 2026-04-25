@@ -1,4 +1,4 @@
-classdef TemporalNoiseLED < edu.washington.riekelab.protocols.RiekeLabProtocol
+classdef TemporalNoiseLED < common.protocols.CommonProtocol
     properties
         led                             % Output LED
         preTime = 250                   % Time before noise (ms)
@@ -14,32 +14,29 @@ classdef TemporalNoiseLED < edu.washington.riekelab.protocols.RiekeLabProtocol
         onlineAnalysis = 'extracellular'% Online analysis type.
         amp                             % Input amplifier
     end
-    
-    properties (Dependent, SetAccess = private)
-        amp2                            % Secondary amplifier
-    end
-    
     properties 
         numberOfAverages = uint16(25)    % Number of families
         interpulseInterval = 0.5        % Duration between noise stimuli (s)
     end
+
+    properties (Dependent) 
+        stimTime
+    end
         
     properties (Hidden)
         ledType
-        ampType
         onlineAnalysisType = symphonyui.core.PropertyType('char', 'row', {'none', 'extracellular', 'spikes_CClamp', 'subthresh_CClamp', 'analog'})
     end
     
     methods
         function didSetRig(obj)
-            didSetRig@edu.washington.riekelab.protocols.RiekeLabProtocol(obj);
+            didSetRig@common.protocols.CommonProtocol(obj);
             
             [obj.led, obj.ledType] = obj.createDeviceNamesProperty('LED');
-            [obj.amp, obj.ampType] = obj.createDeviceNamesProperty('Amp');
         end
         
         function d = getPropertyDescriptor(obj, name)
-            d = getPropertyDescriptor@edu.washington.riekelab.protocols.RiekeLabProtocol(obj, name);
+            d = getPropertyDescriptor@common.protocols.CommonProtocol(obj, name);
             
             if strncmp(name, 'amp2', 4) && numel(obj.rig.getDeviceNames('Amp')) < 2
                 d.isHidden = true;
@@ -54,19 +51,10 @@ classdef TemporalNoiseLED < edu.washington.riekelab.protocols.RiekeLabProtocol
         end
         
         function prepareRun(obj)
-            prepareRun@edu.washington.riekelab.protocols.RiekeLabProtocol(obj);
-            
-            if numel(obj.rig.getDeviceNames('Amp')) < 2
-                obj.showFigure('symphonyui.builtin.figures.ResponseFigure', obj.rig.getDevice(obj.amp));
-                obj.showFigure('symphonyui.builtin.figures.MeanResponseFigure', obj.rig.getDevice(obj.amp));
-                obj.showFigure('edu.washington.riekelab.figures.ProgressFigure', obj.numberOfAverages)
-            else
-                obj.showFigure('edu.washington.riekelab.figures.DualResponseFigure', obj.rig.getDevice(obj.amp), obj.rig.getDevice(obj.amp2));
-                obj.showFigure('edu.washington.riekelab.figures.DualMeanResponseFigure', obj.rig.getDevice(obj.amp), obj.rig.getDevice(obj.amp2));
-            end
+            prepareRun@common.protocols.CommonProtocol(obj);
             
             if ~strcmp(obj.onlineAnalysis, 'none')
-                obj.showFigure('manookinlab.figures.TemporalNoiseLEDFigure', ...
+                obj.showFigure('common.figures.TemporalNoiseLEDFigure', ...
                     obj.rig.getDevice(obj.amp),'recordingType', obj.onlineAnalysis,...
                     'preTime', obj.preTime, 'stimTime', obj.firstStimTime+obj.secondStimTime);
             end
@@ -79,7 +67,7 @@ classdef TemporalNoiseLED < edu.washington.riekelab.protocols.RiekeLabProtocol
             
             % generate a stimulus with two generators
             % make the first noise stimulus
-            gen1 = edu.washington.riekelab.stimuli.GaussianNoiseGeneratorV2();
+            gen1 = common.stimuli.GaussianNoiseGeneratorV2();
             gen1.preTime = obj.preTime;
             gen1.stimTime = obj.firstStimTime;
             gen1.tailTime = obj.secondStimTime + obj.tailTime;
@@ -101,7 +89,7 @@ classdef TemporalNoiseLED < edu.washington.riekelab.protocols.RiekeLabProtocol
             stim1 = gen1.generate();
             
             % make the second noise stimulus
-            gen2 = edu.washington.riekelab.stimuli.GaussianNoiseGeneratorV2();
+            gen2 = common.stimuli.GaussianNoiseGeneratorV2();
             gen2.preTime = obj.preTime + obj.firstStimTime;
             gen2.stimTime = obj.secondStimTime;
             gen2.tailTime = obj.tailTime;
@@ -129,7 +117,7 @@ classdef TemporalNoiseLED < edu.washington.riekelab.protocols.RiekeLabProtocol
         end
         
         function prepareEpoch(obj, epoch)
-            prepareEpoch@edu.washington.riekelab.protocols.RiekeLabProtocol(obj, epoch);
+            prepareEpoch@common.protocols.CommonProtocol(obj, epoch);
             
             persistent seed;
             % Deal with the seed.
@@ -146,42 +134,23 @@ classdef TemporalNoiseLED < edu.washington.riekelab.protocols.RiekeLabProtocol
 
             epoch.addParameter('seed', seed);
             epoch.addStimulus(obj.rig.getDevice(obj.led), stim);
-            epoch.addResponse(obj.rig.getDevice(obj.amp));
             
             % Save the stimulus contrast.
             ct = (stim.getData() - obj.lightMean) / obj.lightMean;
             % Downsample to 1 kHz
             ct = decimate(ct, obj.sampleRate/200);
             epoch.addParameter('contrast', ct);
-            
-            if numel(obj.rig.getDeviceNames('Amp')) >= 2
-                epoch.addResponse(obj.rig.getDevice(obj.amp2));
-            end
         end
         
         function prepareInterval(obj, interval)
-            prepareInterval@edu.washington.riekelab.protocols.RiekeLabProtocol(obj, interval);
+            prepareInterval@common.protocols.CommonProtocol(obj, interval);
             
             device = obj.rig.getDevice(obj.led);
             interval.addDirectCurrentStimulus(device, device.background, obj.interpulseInterval, obj.sampleRate);
         end
-        
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfAverages;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfAverages;
-        end
-        
-        function a = get.amp2(obj)
-            amps = obj.rig.getDeviceNames('Amp');
-            if numel(amps) < 2
-                a = '(None)';
-            else
-                i = find(~ismember(amps, obj.amp), 1);
-                a = amps{i};
-            end
+
+        function stimTime = get.stimTime(obj)
+            stimTime = obj.firstStimTime + obj.secondStimTime;
         end
         
     end

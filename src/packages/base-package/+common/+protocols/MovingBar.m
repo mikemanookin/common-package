@@ -164,7 +164,7 @@ classdef MovingBar < common.protocols.CommonStageProtocol
             mask.color = obj.backgroundRGB;
             mask.position = obj.canvasSize/2;
             mask.orientation = 0;
-            mask.size = 2 * max(obj.canvasSize) * ones(1,2);
+            mask.size = 2 * max(obj.canvasSize(:)) * ones(1,2);
             sc = obj.outerMaskRadiusPix*2 / (2*max(obj.canvasSize));
             m = stage.core.Mask.createCircularAperture(sc);
             mask.setMask(m);

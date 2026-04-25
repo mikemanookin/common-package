@@ -1,4 +1,4 @@
-classdef ChirpStimulus < manookinlab.protocols.ManookinLabStageProtocol
+classdef ChirpStimulus < common.protocols.CommonStageProtocol
     properties
         amp                             % Output amplifier
         preTime = 500                   % Stimulus leading duration (ms)
@@ -26,32 +26,11 @@ classdef ChirpStimulus < manookinlab.protocols.ManookinLabStageProtocol
     end
     
     properties (Hidden)
-        ampType
         onlineAnalysisType = symphonyui.core.PropertyType('char', 'row', {'none', 'extracellular', 'spikes_CClamp', 'subthresh_CClamp', 'analog'})
         stimulusClassType = symphonyui.core.PropertyType('char', 'row', {'spot','annulus', 'full-field'})
     end
     
     methods
-        function didSetRig(obj)
-            didSetRig@edu.washington.riekelab.protocols.RiekeLabStageProtocol(obj);
-            
-            [obj.amp, obj.ampType] = obj.createDeviceNamesProperty('Amp');
-        end
-        
-        function prepareRun(obj)
-            prepareRun@manookinlab.protocols.ManookinLabStageProtocol(obj);
-            
-            if ~obj.isMeaRig
-                obj.showFigure('symphonyui.builtin.figures.ResponseFigure', obj.rig.getDevice(obj.amp));
-
-                if ~strcmp(obj.onlineAnalysis, 'none')
-                    obj.showFigure('manookinlab.figures.MeanResponseFigure', ...
-                        obj.rig.getDevice(obj.amp),'recordingType',obj.onlineAnalysis,...
-                        'sweepColor',[0,0,0],...
-                        'groupBy',{'frameRate'});
-                end
-            end
-        end
         
         function p = createPresentation(obj)
 
@@ -123,26 +102,9 @@ classdef ChirpStimulus < manookinlab.protocols.ManookinLabStageProtocol
             
         end
         
-        function prepareEpoch(obj, epoch)
-            prepareEpoch@manookinlab.protocols.ManookinLabStageProtocol(obj, epoch);
-            
-            % Remove the Amp responses if it's an MEA rig.
-            if obj.isMeaRig
-                amps = obj.rig.getDevices('Amp');
-                for ii = 1:numel(amps)
-                    if epoch.hasResponse(amps{ii})
-                        epoch.removeResponse(amps{ii});
-                    end
-                    if epoch.hasStimulus(amps{ii})
-                        epoch.removeStimulus(amps{ii});
-                    end
-                end
-            end
-        end
-        
         % Same presentation each epoch in a run. Replay.
         function controllerDidStartHardware(obj)
-            controllerDidStartHardware@edu.washington.riekelab.protocols.RiekeLabProtocol(obj);
+            controllerDidStartHardware@common.protocols.CommonProtocol(obj);
             if (obj.numEpochsCompleted >= 1) && (obj.numEpochsCompleted < obj.numberOfAverages)
                 obj.rig.getDevice('Stage').replay
             else
@@ -152,14 +114,6 @@ classdef ChirpStimulus < manookinlab.protocols.ManookinLabStageProtocol
         
         function stimTime = get.stimTime(obj)
             stimTime = obj.interTime*3 + obj.stepTime*2 + obj.frequencyTime + obj.contrastTime;
-        end
-        
-        function tf = shouldContinuePreparingEpochs(obj)
-            tf = obj.numEpochsPrepared < obj.numberOfAverages;
-        end
-        
-        function tf = shouldContinueRun(obj)
-            tf = obj.numEpochsCompleted < obj.numberOfAverages;
         end
     end
 end
