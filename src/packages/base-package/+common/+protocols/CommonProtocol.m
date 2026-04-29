@@ -40,7 +40,7 @@ classdef (Abstract) CommonProtocol < symphonyui.core.Protocol
 
         function prepareRun(obj)
             prepareRun@symphonyui.core.Protocol(obj);
-            
+
             obj.startedRun = false;
 
             obj.isMeaRig = false; % Default
@@ -50,63 +50,79 @@ classdef (Abstract) CommonProtocol < symphonyui.core.Protocol
                 obj.isMeaRig = true;
             end
 
-            % Show the default figures.
-            obj.prepareDefaultFigures();
+            % Default figures (Response, MeanResponse, Progress, etc.)
+            % depend on captured DAQ responses, which only exist on
+            % Windows where the rig actually acquires. Skip on
+            % Mac/Linux — those platforms are protocol-development /
+            % data-review-only (see ADR-0007).
+            if ispc
+                obj.prepareDefaultFigures();
+            end
         end
-        
+
         function prepareEpoch(obj, epoch)
             prepareEpoch@symphonyui.core.Protocol(obj, epoch);
-            
+
             % Add device reponses to the Epoch.
             obj.addDeviceReponsesToEpoch(epoch);
 
-            % Add amplifier responses to the Epoch.
-            obj.addAmpResponsesToEpoch(epoch);
-            
+            % Amp DC stimulus + response: DAQ-pipeline only. Reading
+            % `device.background` inside addAmpResponsesToEpoch
+            % evaluates the amp device's .NET cobj.Background getter,
+            % which has SEGV'd MATLAB R2024b on macOS. Mac/Linux are
+            % protocol-development platforms with no DAQ acquisition;
+            % skip the whole branch (see ADR-0007 platform-roles).
+            if ispc
+                obj.addAmpResponsesToEpoch(epoch);
+            end
+
             % This is for the MEA setup. Check if this is an MEA rig on the
             % first epoch.
             if ~obj.startedRun
                 obj.startedRun = true;
                 obj.isMeaRig = false; % Default
                 obj.meaFileName = ''; % Default
-                
-                % Check if this is an MEA rig.
-                mea = obj.rig.getDevices('MEA');
-                if ~isempty(mea)
-                    obj.isMeaRig = true;
-                    
-                    mea = mea{1};
-                    % Try to pull the output file name from the server.
-%                     fname = mea.getFileName(30);
-                    
-                    % New tests:
-                    mea.start();
-                    fname = char(mea.fileName);
-                    
-                    if ~isempty(fname)
-                        obj.meaFileName = char(fname);
-                    else
-                        obj.meaFileName = '';
-                    end
-                    
-                    % Persist the file name
-                    if ~isempty(fname) && ~isempty(obj.persistor)
-                        try
-                            eb = obj.persistor.currentEpochBlock;
-                            if ~isempty(eb)
-                                eb.setProperty('dataFileName', char(fname))
+
+                % MEA detection touches a real hardware device — skip
+                % off-Windows (no MEA on a development laptop).
+                if ispc
+                    mea = obj.rig.getDevices('MEA');
+                    if ~isempty(mea)
+                        obj.isMeaRig = true;
+
+                        mea = mea{1};
+                        % Try to pull the output file name from the server.
+%                         fname = mea.getFileName(30);
+
+                        % New tests:
+                        mea.start();
+                        fname = char(mea.fileName);
+
+                        if ~isempty(fname)
+                            obj.meaFileName = char(fname);
+                        else
+                            obj.meaFileName = '';
+                        end
+
+                        % Persist the file name
+                        if ~isempty(fname) && ~isempty(obj.persistor)
+                            try
+                                eb = obj.persistor.currentEpochBlock;
+                                if ~isempty(eb)
+                                    eb.setProperty('dataFileName', char(fname))
+                                end
+                            catch
                             end
-                        catch
                         end
                     end
                 end
             end
-            
+
             % Persist the file name to the epoch if it's an MEA rig.
             if obj.isMeaRig
                 try
                     epoch.addParameter('dataFileName', obj.meaFileName);
-                    
+
                     % Create the external trigger to the MEA DAQ.
                     triggers = obj.rig.getDevices('ExternalTrigger');
                     if ~isempty(triggers)
@@ -155,9 +171,15 @@ classdef (Abstract) CommonProtocol < symphonyui.core.Protocol
         function prepareInterval(obj, interval)
             prepareInterval@symphonyui.core.Protocol(obj, interval);
 
+            % DAQ-only — see addAmpResponsesToEpoch comment in
+            % prepareEpoch above. Skip on Mac/Linux.
+            if ~ispc
+                return;
+            end
+
             % Get the amplfiers.
             amps = obj.rig.getDevices('Amp');
-            
+
             % Add each amplifier
             for k = 1 : length(amps)
                 device = obj.rig.getDevice(amps{k}.name);
@@ -258,7 +280,13 @@ classdef (Abstract) CommonProtocol < symphonyui.core.Protocol
         
         function completeEpoch(obj, epoch)
             completeEpoch@symphonyui.core.Protocol(obj, epoch);
-            
+
+            % Reading captured response data is DAQ-only — Mac/Linux
+            % don't acquire, so there's nothing to read.
+            if ~ispc
+                return;
+            end
+
             controllers = obj.rig.getDevices('Temperature Controller');
             if ~isempty(controllers) && epoch.hasResponse(controllers{1})
                 response = epoch.getResponse(controllers{1});
@@ -266,12 +294,12 @@ classdef (Abstract) CommonProtocol < symphonyui.core.Protocol
                 if ~strcmp(units, 'V')
                     error('Temperature Controller must be in volts');
                 end
-                
+
                 % Temperature readout from Warner TC-324B controller 100 mV/degree C.
                 temperature = mean(quantities) * 1000 * (1/100);
                 temperature = round(temperature * 10) / 10;
                 epoch.addProperty('bathTemperature', temperature);
-                
+
                 epoch.removeResponse(controllers{1});
             end
         end

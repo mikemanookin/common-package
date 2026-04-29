@@ -11,7 +11,11 @@ classdef (Abstract) CommonStageProtocol < common.protocols.CommonProtocol
         labName
     end
     
-    properties (Access = protected)
+    % Hidden (default public Get/Set) instead of `Access = protected`
+    % to avoid R2024b/macOS MCOS protected-property-read SEGV on the
+    % .NET Engine API path. Same rationale as
+    % symphonyui.core.Protocol's counters; see ADR-0007.
+    properties (Hidden)
         waitingForHardwareToStart
     end
 
@@ -53,27 +57,34 @@ classdef (Abstract) CommonStageProtocol < common.protocols.CommonProtocol
         
         function prepareEpoch(obj, epoch)
             prepareEpoch@common.protocols.CommonProtocol(obj, epoch);
-            
+
             obj.waitingForHardwareToStart = true;
-            % Wait for a trigger/TTL signal from the frame monitor to start
-            % acquisition. This synchronizes the beginning of the stimulus
-            % presentation with the DAQ clock.
-            epoch.shouldWaitForTrigger = true;
+
+            % Trigger / TTL synchronization is DAQ-pipeline only.
+            % `epoch.shouldWaitForTrigger = true` writes through to
+            % the .NET Symphony.Core.Epoch cobj, which doesn't exist
+            % in a meaningful way on Mac/Linux. Same for the
+            % projector_gain background poke below. See ADR-0007.
+            if ispc
+                epoch.shouldWaitForTrigger = true;
+            end
 
             % Add the frame monitor response.
             if ~isempty(obj.frameMonitor)
                 epoch.addResponse(obj.frameMonitor);
             end
-            
+
             redSync = obj.rig.getDevices('Red Sync');
             if ~isempty(redSync)
                 epoch.addResponse(redSync{1});
             end
-            
-            projector_gain = obj.rig.getDevices('Projector Gain');
-            if ~isempty(projector_gain)
-                projector_gain{1}.background = symphonyui.core.Measurement(1, projector_gain{1}.background.displayUnits);
-                projector_gain{1}.applyBackground();
+
+            if ispc
+                projector_gain = obj.rig.getDevices('Projector Gain');
+                if ~isempty(projector_gain)
+                    projector_gain{1}.background = symphonyui.core.Measurement(1, projector_gain{1}.background.displayUnits);
+                    projector_gain{1}.applyBackground();
+                end
             end
         end
 
@@ -116,7 +127,17 @@ classdef (Abstract) CommonStageProtocol < common.protocols.CommonProtocol
         
         function completeRun(obj)
             completeRun@common.protocols.CommonProtocol(obj);
-            obj.rig.getDevice('Stage').clearMemory();
+
+            % Clearing the Stage device's memory only matters for a
+            % real DAQ run; on Mac/Linux it can be skipped (the
+            % Stage device's `clearMemory` reaches into the .NET
+            % cobj). Wrap defensively.
+            if ispc
+                try
+                    obj.rig.getDevice('Stage').clearMemory();
+                catch
+                end
+            end
         end
         
         function [tf, msg] = isValid(obj)
