@@ -75,11 +75,6 @@ classdef SpatialNoise < common.protocols.CommonStageProtocol
                 obj.time_multiple = 1.0;
             end
             
-            if ~obj.isMeaRig
-                obj.showFigure('symphonyui.builtin.figures.ResponseFigure', obj.rig.getDevice(obj.amp));
-            end
-            
-            
             if obj.gaussianFilter
                 % Get the gamma ramps.
                 [r,g,b] = obj.rig.getDevice('Stage').getMonitorGammaRamp();

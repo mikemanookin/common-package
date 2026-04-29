@@ -126,7 +126,17 @@ classdef (Abstract) CommonStageProtocol < common.protocols.CommonProtocol
 
         % Check for a frame monitor and set up if present in rig config.
         function a = get.frameMonitor(obj)
-            a = obj.rig.getDevice('Frame Monitor');
+            % Check for frame monitor device.
+            f_monitor = obj.rig.getDevices('Frame Monitor');
+            if ~isempty(f_monitor)
+                try
+                    a = f_monitor{1};
+                catch
+                    a = [];
+                end
+            else
+                a = [];
+            end
         end
         
         function completeRun(obj)
