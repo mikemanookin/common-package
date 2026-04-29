@@ -63,6 +63,10 @@ classdef (Abstract) CommonProtocol < symphonyui.core.Protocol
         function prepareEpoch(obj, epoch)
             prepareEpoch@symphonyui.core.Protocol(obj, epoch);
 
+            if ~ispc
+                return;
+            end
+
             % Add device reponses to the Epoch.
             obj.addDeviceReponsesToEpoch(epoch);
 

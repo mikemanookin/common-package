@@ -60,6 +60,10 @@ classdef (Abstract) CommonStageProtocol < common.protocols.CommonProtocol
 
             obj.waitingForHardwareToStart = true;
 
+            if ~ispc
+                return;
+            end
+
             % Trigger / TTL synchronization is DAQ-pipeline only.
             % `epoch.shouldWaitForTrigger = true` writes through to
             % the .NET Symphony.Core.Epoch cobj, which doesn't exist
