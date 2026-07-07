@@ -70,3 +70,25 @@
 - [ ] Badge in README reflects test status
 
 **Out of scope:** Deployment or release automation.
+
+---
+
+## TASK-006 — LightCrafterDevice video-mode support in getPatternRate/setPatternRate
+
+**Spec:** (none yet — device behavior not spec'd)
+**Status:** Implemented, awaiting hardware verification — 2026-07-07
+**Priority:** P1
+
+**Context:** With `'mode', 'video'`, every Stage protocol crashed at
+`CommonStageProtocol.prepareRun` because `LightCrafterDevice.getPatternRate`
+unconditionally queried the projector's pattern attributes, which the DLPC350
+rejects outside pattern mode ("Must be in pattern mode to get pattern
+attributes"). Reported from the FieldMEARigB rig.
+
+**Acceptance criteria:**
+- [ ] In video mode, `getPatternRate()` returns the monitor refresh rate (no projector pattern query)
+- [ ] In pattern mode, `getPatternRate()` returns `LightCrafter4500.currentPatternRate()` as before
+- [ ] In video mode, `setPatternRate()` errors with an actionable message instead of failing on the uninitialized rate map
+- [ ] Hardware-verified on an LCR rig: a Stage protocol runs to completion in video mode, and pattern mode is unchanged (human confirmation required)
+
+**Out of scope:** The pattern-mode color rendering issue (green vs. white stimulus) — that is a projector state/sequence issue, not a code path in this device class.
